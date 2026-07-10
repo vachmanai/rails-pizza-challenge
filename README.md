@@ -40,8 +40,8 @@ The complexity here is how to keep it as simple as possible — i.e., don't make
 I started from making the DB design. And followed all the rules of making a normalized database design.
 Here is what I got:
 
-• created_at and updated_at are omitted for simplicity's sake.
-• Have to add complete: boolean column to orders table
+- created_at and updated_at are omitted for simplicity's sake.
+- Have to add complete: boolean column to orders table
 
 ![Alt text](docs/db_diagram.png)
 
@@ -60,57 +60,57 @@ Please let me know if it's not necessary.
 So here I'm trying to understand what should happen when something is created, updated, or changed through ActiveRecord:
 
 order.create
-• just create an order
-• complete is false by default
-• should fire a callback to Hotwire and update orders on the frontend
+- just create an order
+- complete is false by default
+- should fire a callback to Hotwire and update orders on the frontend
 
 order.update
-• should fire a callback to Hotwire and update orders on the frontend
+- should fire a callback to Hotwire and update orders on the frontend
 
 order.destroy
-• should remove all associated order_pizzas (dependent destroy)
-• should remove all associated order_promotions (dependent destroy)
-• should remove all associated order_discounts (dependent destroy)
-• should fire a callback to Hotwire and update the order on the frontend
+- should remove all associated order_pizzas (dependent destroy)
+- should remove all associated order_promotions (dependent destroy)
+- should remove all associated order_discounts (dependent destroy)
+- should fire a callback to Hotwire and update the order on the frontend
 
 order_pizzas.create
-• take the pizza default size
-• RECALCULATE WHOLE ORDER if size changed
+- take the pizza default size
+- RECALCULATE WHOLE ORDER if size changed
 
 order_pizzas.update
 
-• validations
-• RECALCULATE WHOLE ORDER if size changed
+- validations
+- RECALCULATE WHOLE ORDER if size changed
 
 order_pizzas.delete/destroy
-• should remove all associated order_pizza_ingredients (dependent destroy)
-• RECALCULATE WHOLE ORDER
+- should remove all associated order_pizza_ingredients (dependent destroy)
+- RECALCULATE WHOLE ORDER
 
 order_promotions.create
-• validations
-• RECALCULATE WHOLE ORDER
+- validations
+- RECALCULATE WHOLE ORDER
 
 order_promotions.destroy
-• RECALCULATE WHOLE ORDER
+- RECALCULATE WHOLE ORDER
 
 order_discounts.create
-• validations
-• RECALCULATE WHOLE ORDER
+- validations
+- RECALCULATE WHOLE ORDER
 
 order_discounts.destroy
-• RECALCULATE WHOLE ORDER
+- RECALCULATE WHOLE ORDER
 
 order_pizza_ingredients.create
-• validations
-• default amount 0 means ingredient is omitted
-• RECALCULATE WHOLE ORDER
+- validations
+- default amount 0 means ingredient is omitted
+- RECALCULATE WHOLE ORDER
 
 order_pizza_ingredients.update
-• validations
-• RECALCULATE WHOLE ORDER
+- validations
+- RECALCULATE WHOLE ORDER
 
 order_pizza_ingredients.destroy
-• RECALCULATE WHOLE ORDER
+- RECALCULATE WHOLE ORDER
 
 ## 09/07/2026 - 22:00
 
@@ -131,11 +131,11 @@ It's also possible to use JSONB in Postgres to make it more robust.
 Here is how the schema could look like:
 
 Simply gonna create these tables as in the diagram before:
-• pizzas
-• ingredients
-• sizes
-• discounts
-• promotions
+- pizzas
+- ingredients
+- sizes
+- discounts
+- promotions
 
 And create an orders table with a details attribute which will store everything:
 
@@ -148,23 +148,23 @@ orders:
 
 Here are some benefits of it:
 
-• since everything is in order details, it will drastically eliminate the amount of requests to the DB
-• easy calculations, only order.details are needed
-• I'm not sure here, but I think it's possible to make transactions safer and eliminate the chance of getting cross-table locks, especially if some sort of async processes could be involved.
+- since everything is in order details, it will drastically eliminate the amount of requests to the DB
+- easy calculations, only order.details are needed
+- I'm not sure here, but I think it's possible to make transactions safer and eliminate the chance of getting cross-table locks, especially if some sort of async processes could be involved.
 I was having this kind of issues before.
-• fewer callbacks (I really love callbacks, but here it's not the best idea to use them)
-• less ambiguity
-• easier to test
-• easy way to render order JSON
-• easy to handle frontend refreshes, just fire a callback to Hotwire when the order is changed
-• since prices are gonna be fixed in order.details when the order is created, later manipulation of the DB will not lead to wrong total_amounts. This is kind of important.
+- fewer callbacks (I really love callbacks, but here it's not the best idea to use them)
+- less ambiguity
+- easier to test
+- easy way to render order JSON
+- easy to handle frontend refreshes, just fire a callback to Hotwire when the order is changed
+- since prices are gonna be fixed in order.details when the order is created, later manipulation of the DB will not lead to wrong total_amounts. This is kind of important.
 
 And of course the cons:
 
-• JSONB is not that fast for queries
-• the DB is less normalized
-• I have to decide how to organize the code to avoid writing the whole logic in one class
-• it's an antipattern for the Ruby on Rails world
+- JSONB is not that fast for queries
+- the DB is less normalized
+- I have to decide how to organize the code to avoid writing the whole logic in one class
+- it's an antipattern for the Ruby on Rails world
 
 ## 10/07/2026 - 18:00
 
